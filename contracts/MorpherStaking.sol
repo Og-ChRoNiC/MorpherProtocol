@@ -28,6 +28,8 @@ contract MorpherStaking is Ownable {
     uint256 public lockupPeriod = 30 days; // to prevent tactical staking and ensure smooth governance
     uint256 public minimumStake = 10**23; // 100k MPH minimum
 
+    uint256 public minimumBalance = 10000 * 10**18; //the minimum balance you need to have in your Account
+
     address public stakingAdmin;
 
     address public stakingAddress = 0x2222222222222222222222222222222222222222;
@@ -39,6 +41,7 @@ contract MorpherStaking is Ownable {
     event SetInterestRate(uint256 newInterestRate);
     event SetLockupPeriod(uint256 newLockupPeriod);
     event SetMinimumStake(uint256 newMinimumStake);
+    event SetMinimumBalance(uint256 newMinimumBalance);
     event LinkState(address stateAddress);
     event SetStakingAdmin(address stakingAdmin);
     
@@ -105,6 +108,7 @@ contract MorpherStaking is Ownable {
         _poolShares = _amount.div(poolShareValue);
         (uint256 _numOfShares, , , , , ) = state.getPosition(msg.sender, marketIdStakingMPH);
         require(minimumStake <= _numOfShares.add(_poolShares).mul(poolShareValue), "MorpherStaking: stake amount lower than minimum stake");
+        require(minimumBalance <= state.balanceOf(msg.sender), "MorpherStaking: Minimum Token Balance not reached in your Account.");
         state.transfer(msg.sender, stakingAddress, _poolShares.mul(poolShareValue));
         totalShares = totalShares.add(_poolShares);
         state.setPosition(msg.sender, marketIdStakingMPH, now.add(lockupPeriod), _numOfShares.add(_poolShares), 0, 0, 0, 0, 0);
@@ -160,6 +164,11 @@ contract MorpherStaking is Ownable {
     function setMinimumStake(uint256 _minimumStake) public onlyStakingAdmin {
         minimumStake = _minimumStake;
         emit SetMinimumStake(_minimumStake);
+    }
+
+    function setMinimumBalance(uint256 _minimumBalance) public onlyStakingAdmin {
+        minimumBalance = _minimumBalance;
+        emit SetMinimumBalance(_minimumBalance);
     }
 
 // ----------------------------------------------------------------------------

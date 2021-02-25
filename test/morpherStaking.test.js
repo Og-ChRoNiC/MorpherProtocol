@@ -6,11 +6,9 @@ const BN = require("bn.js");
 
 
 contract('MorpherStaking: increase/decrease staked amount', (accounts) => {
-    const [deployer, account1] = accounts;
+    const [deployer, account1, account2] = accounts;
 
     it('staking is possible', async () => {
-
-
         const token = await MorpherToken.deployed();
         const staking = await MorpherStaking.deployed();
         await token.transfer(account1, web3.utils.toWei('1000000', 'ether'), { from: deployer }); //fill up some tokens
@@ -67,6 +65,21 @@ contract('MorpherStaking: increase/decrease staked amount', (accounts) => {
         await truffleAssert.eventEmitted(result, 'SetMinimumStake');
 
         await truffleAssert.fails(staking.stake(99, { from: account1 }), truffleAssert.ErrorType.REVERT, 'MorpherStaking: stake amount lower than minimum stake');
+    });
+
+    
+    it('minimumBalance is accounted for', async () => {
+
+        const token = await MorpherToken.deployed();
+        const staking = await MorpherStaking.deployed();
+        await token.transfer(account2, web3.utils.toWei('5000', 'ether'), { from: deployer }); //fill up some tokens, but not enough to stake
+
+        assert.equal('0', (await staking.getStake(account2)).toString());
+
+        let result = await staking.setMinimumStake(0);
+        await truffleAssert.eventEmitted(result, 'SetMinimumStake');
+
+        await truffleAssert.fails(staking.stake(1, { from: account2 }), truffleAssert.ErrorType.REVERT, 'MorpherStaking: Minimum Token Balance not reached in your Account.');
     });
 
 });
